@@ -8,6 +8,8 @@ Anggota Kelompok :
 4. Rio Ramadhan Bahtiar - 1905741
 5. M. Aththar Astaghfiranza - 1904631
 
+Require :
+- nCurses
 
 Untuk menjalankan tinggal compile saja dengan parameter berikut :
 gcc ncursesProgram.c -o output -lncurses -pthread -lmenu
