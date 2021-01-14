@@ -3,7 +3,7 @@
 #include <ncurses.h> // untuk tampilan
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h> 
+#include <unistd.h>
 #include <stdlib.h>
 #include <pthread.h> // untuk thread
 #include <time.h>   //untuk fungsi clock(),clock_t
@@ -41,7 +41,7 @@ WINDOW *create_newwin(int height, int width, int starty, int startx);
 // prosedur menghapus window jika dibutuhkan
 void destroy_win(WINDOW *local_win);
 
-// thread generator kata 
+// thread generator kata
 void* wordGen(void * arg);
 
 // delay timer
@@ -75,27 +75,27 @@ int main()
 {
 	// keperluan untuk menu
    ITEM **my_items;
-	
+
 	strcpy(local_input, "");
 
 	// penampung key yang ditekan
-	int c;	
+	int c;
 
 	// status tunggu true
-	wait = 1;		
-	
+	wait = 1;
+
 	// menu
 	MENU *my_menu;
 
-	// window menu 
+	// window menu
    WINDOW *my_menu_win;
-   
+
 	// pilihan menu
 	int n_choices, i;
 
 	// baca data dari file "word_dictionary.txt"
    read_ptr = fopen(word_dictionary, "r");
-	
+
 	/* Initialize curses */
 	initscr();
 	start_color();
@@ -122,7 +122,7 @@ int main()
 	/* Create the window to be associated with the menu */
         my_menu_win = newwin(LINES-1, (COLS-3)/3 + 3, 1, 1);
         keypad(my_menu_win, TRUE);
-     
+
 	/* Set main window and sub window */
         set_menu_win(my_menu, my_menu_win);
         set_menu_sub(my_menu, derwin(my_menu_win, 4, 30, 3, 2));
@@ -138,14 +138,14 @@ int main()
 	mvwaddch(my_menu_win, 2, (COLS-3)/3 + 2, ACS_RTEE);
 	mvprintw(LINES/2, 0, "  Notes : F2 to exit");
 	refresh();
-   
+
 	/* Post the menu */
 	post_menu(my_menu);
 	wrefresh(my_menu_win);
 	while((c = wgetch(my_menu_win)) != KEY_F(2) || game_state != 0)
-	{       
+	{
 		switch(c)
-	   {	
+	   {
 			case KEY_DOWN:
 				menu_driver(my_menu, REQ_DOWN_ITEM);
 				break;
@@ -167,17 +167,17 @@ int main()
 				while(game_state == 1){
 					inputWord();
 				}
-				break;	
+				break;
 			}
 		}
 		wrefresh(my_menu_win);
 		noecho();
-	}	
+	}
 		// wait until this thread finish running
 		pthread_join(t_word, NULL);
 		pthread_join(t_timer, NULL);
 		pthread_join(t_score, NULL);
-	
+
 	// end game
 	game_state = 0;
 	/* Unpost and free all the memory taken up */
@@ -213,8 +213,10 @@ void gameScreen(int height, int width, int starty, int startx){
 void* wordGen(void * arg){
     char local_buffer[15];
     int get_word = 1;
-    memset(local_buffer, 0, sizeof(local_buffer));
+    memset(local_buffer, 0, sizeof(local_buffer)); // Empty Local Buffer
     if(fgets(local_buffer, sizeof(local_buffer), read_ptr) == NULL){
+         //If fgets gets to EOF then rewind() to top of the file then get word
+         //Else just get word
         rewind(read_ptr);
         fgets(local_buffer, sizeof(local_buffer), read_ptr);
     }
@@ -222,8 +224,11 @@ void* wordGen(void * arg){
     while(game_state == 1){
         pthread_mutex_lock(&lock);
         if(buffer_pos < 10){
+            //Empty buffer
             memset(buffer[buffer_pos], 0, sizeof(buffer[buffer_pos]));
+            //Remove double \n from the end of fgets string
             memset(&local_buffer[(strlen(local_buffer)-3)], '\0', 1);
+            //Move from local_buffer to global buffer
             strcpy(buffer[buffer_pos], local_buffer);
             buffer_pos += 1;
             pthread_mutex_unlock(&lock);
@@ -235,8 +240,10 @@ void* wordGen(void * arg){
         }
 
         if(get_word == 1){
-            memset(local_buffer, 0, sizeof(local_buffer));
+            memset(local_buffer, 0, sizeof(local_buffer)); // Empty Local Buffer
             if(fgets(local_buffer, sizeof(local_buffer), read_ptr) == NULL){
+                //If fgets gets to EOF then rewind() to top of the file then get word
+                //Else just get word
                 rewind(read_ptr);
                 fgets(local_buffer, sizeof(local_buffer), read_ptr);
             }
@@ -255,12 +262,15 @@ void *throwWord(void  *vargp){
 		pthread_mutex_lock(&lock);
 			if(buffer_pos > 0){
 				buffer_pos -= 1;
+                //Copy word data from global buffer to local buffer
 				strcpy(local_buffer,buffer[buffer_pos]);
 			} else {
+                //Just in case something went wrong :D
 				strcpy(local_buffer, "layangan");
 			}
 		pthread_mutex_unlock(&lock);
 
+        //Display the word that need to be typed
 		wattron(wordWin, COLOR_PAIR(3));
 		mvwprintw(wordWin, 2, 10, "          ");
 		mvwprintw(wordWin, 2, 10, "%s", local_buffer);
@@ -270,6 +280,7 @@ void *throwWord(void  *vargp){
 		wrefresh(wordWin);
 		pthread_mutex_unlock(&lock);
 
+        //Wait for a second
 		if(wait == 1){
 			delay(10000000);
 		} else {
@@ -278,7 +289,7 @@ void *throwWord(void  *vargp){
 	}
 }
 
-void displayWord(){	
+void displayWord(){
 
 	wattron(wordWin, COLOR_PAIR(1));
 	mvwprintw(wordWin, 2, 3, "Word :");
@@ -297,25 +308,25 @@ void delay(int ms) //delay function
 			break;
 		}
 	} //stop when the clock is higher than time delay
-	
+
 }
 
 int counter()
 {
    while (game_state == 1)
-   { 
+   {
 		if(scoreChanged){
 			second = 10;
 			scoreChanged = 0;
 		}
       if (minute < 0)
-      { 
+      {
          minute = 59;
          --hour;
       }
 
       if (second < 0)
-      { 
+      {
          second = 59;
          --minute;
       }
@@ -326,7 +337,7 @@ int counter()
 		pthread_mutex_lock(&lock);
 		wrefresh(timeWin);
 		pthread_mutex_unlock(&lock);
-		
+
       delay(1000000);
       if (hour == 0 && minute == 0 && second == 0)
       {
@@ -374,7 +385,7 @@ void *throwScore(void *vargp){
 			pthread_mutex_unlock(&lock);
 		}
 	}
-	
+
 }
 void displayScore(){
 
@@ -407,16 +418,16 @@ void inputWord()
          pthread_mutex_lock(&lock);
 			game_state = 0;
          pthread_mutex_unlock(&lock);
-		}	
+		}
 	}
 }
 
 WINDOW *create_newwin(int height, int width, int starty, int startx)
-{	
+{
 	WINDOW *local_win;
 
 	local_win = newwin(height, width, starty, startx);
-	box(local_win, 0 , 0);		/* 0, 0 gives default characters 
+	box(local_win, 0 , 0);		/* 0, 0 gives default characters
 					 					* for the vertical and horizontal
 					 					* lines			*/
 	wrefresh(local_win);		/* Show that box 		*/
@@ -425,14 +436,14 @@ WINDOW *create_newwin(int height, int width, int starty, int startx)
 }
 
 void destroy_win(WINDOW *local_win)
-{	
+{
 	wborder(local_win, ' ', ' ', ' ',' ',' ',' ',' ',' ');
 	wrefresh(local_win);
 	delwin(local_win);
 }
 
 void print_on_middle(WINDOW *win, int starty, int startx, int width, char *string, chtype color)
-{	
+{
 	int length, x, y;
 	float temp;
 
